@@ -1,3 +1,23 @@
+# Virtual environment
 myenv/
+venv/
+.venv/
+
+# Secrets
 .env
+
+# Python cache
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# FAISS vector indexes (large binary files, regenerated at runtime)
+data/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# OS files
+.DS_Store
+Thumbs.db
