@@ -44,18 +44,15 @@ COPY app.py   ./app.py
 COPY main.py  ./main.py
 COPY src/     ./src/
 
-# Directories for FAISS indexes and HuggingFace model cache
+# Directories for FAISS indexes and Hugging Face model cache
 RUN mkdir -p /app/data /app/.cache/huggingface
 
-EXPOSE \
+EXPOSE 8501
 
 # Healthcheck via Streamlit built-in health endpoint
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:\/_stcore/health')"
+    CMD python -c "import urllib.request; urllib.request.urlopen(\"http://localhost:${PORT}/_stcore/health\")"
 
-# Uses \ so it works on both local (8501) and Render (dynamic port)
-CMD streamlit run app.py \
-    --server.port=\ \
-    --server.address=0.0.0.0 \
-    --server.headless=true \
-    --browser.gatherUsageStats=false
+# Uses shell execution form to expand $PORT at runtime
+CMD sh -c "streamlit run app.py --server.port=${PORT:-8501} --server.address=0.0.0.0 --server.headless=true --browser.gatherUsageStats=false"
+
