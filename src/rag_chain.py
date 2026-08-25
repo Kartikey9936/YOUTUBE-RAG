@@ -10,10 +10,17 @@ def format_docs(retrieved_docs):
     return "\n\n".join(doc.page_content for doc in retrieved_docs)
 
 def get_llm() -> ChatGroq:
-    """Initializes and returns the ChatGroq model using the API key from environment."""
+    """Initializes and returns the ChatGroq model using the API key from environment or Streamlit secrets."""
     api_key = os.environ.get("GROQ_API_KEY")
     if not api_key:
-        raise ValueError("GROQ_API_KEY not found in environment. Please make sure your .env file is set up correctly.")
+        try:
+            import streamlit as st
+            api_key = st.secrets.get("GROQ_API_KEY")
+        except Exception:
+            pass
+            
+    if not api_key:
+        raise ValueError("GROQ_API_KEY not found. Please set GROQ_API_KEY in environment variables or Streamlit secrets.")
     return ChatGroq(
         model=config.GROQ_MODEL_NAME,
         temperature=0.2,
