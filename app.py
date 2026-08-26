@@ -13,6 +13,8 @@ sys.path.append(str(Path(__file__).resolve().parent))
 # Load Environment variables
 load_dotenv()
 
+from youtube_transcript_api import TranscriptsDisabled, NoTranscriptFound
+
 # Import pipeline modules
 from src.youtube_loader import load_transcript, extract_video_id
 from src.text_splitter import split_documents
@@ -187,8 +189,12 @@ with st.sidebar:
             st.session_state["chat_history"] = []
             st.rerun()
             
+        except TranscriptsDisabled:
+            st.error("❌ This video has subtitles/transcripts disabled by the creator.")
+        except NoTranscriptFound:
+            st.error("❌ No supported transcript was found. Try a video with English or Hindi subtitles.")
         except Exception as e:
-            st.error(f"Error processing video: {str(e)}")
+            st.error(f"❌ Could not process this video: {str(e)}")
 
     # Show active video metadata in sidebar
     if st.session_state["video_metadata"] and st.session_state["video_id"]:
