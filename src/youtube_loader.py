@@ -22,61 +22,38 @@ def load_transcript(video_id: str) -> tuple[list[dict], str]:
     Returns a tuple of (raw_transcript_list, concatenated_text).
     Raises TranscriptsDisabled, NoTranscriptFound, or Exception on failures.
     """
+    api = YouTubeTranscriptApi()
     try:
-        # Try fetching using list_transcripts if available, or direct get_transcript
-        try:
-            transcript_list_obj = YouTubeTranscriptApi.list_transcripts(video_id)
-            # Try English first
-            try:
-                transcript_obj = transcript_list_obj.find_transcript(['en', 'en-US', 'en-GB'])
-                raw_data = transcript_obj.fetch()
-            except NoTranscriptFound:
-                # Try Hindi next
-                try:
-                    transcript_obj = transcript_list_obj.find_transcript(['hi'])
-                    raw_data = transcript_obj.fetch()
-                except NoTranscriptFound:
-                    # Fallback to any generated/manual transcript
-                    try:
-                        transcript_obj = transcript_list_obj.find_generated_transcript(['en', 'hi'])
-                        raw_data = transcript_obj.fetch()
-                    except NoTranscriptFound:
-                        # Fetch the first available transcript
-                        for t in transcript_list_obj:
-                            raw_data = t.fetch()
-                            break
-                        else:
-                            raise NoTranscriptFound(video_id, ['en', 'hi'], transcript_list_obj)
-        except (AttributeError, Exception) as list_err:
-            if isinstance(list_err, (TranscriptsDisabled, NoTranscriptFound)):
-                raise list_err
-            # Fallback to simple get_transcript call
-            try:
-                raw_data = YouTubeTranscriptApi.get_transcript(video_id, languages=['en', 'hi'])
-            except (TranscriptsDisabled, NoTranscriptFound) as e:
-                raise e
-            except Exception:
-                raw_data = YouTubeTranscriptApi.get_transcript(video_id)
-
-        # Convert Raw Script objects / dictionaries into standard dict list
-        transcript_list = []
-        for item in raw_data:
-            if isinstance(item, dict):
-                transcript_list.append(item)
-            else:
-                transcript_list.append({
-                    "text": getattr(item, 'text', str(item)),
-                    "start": getattr(item, 'start', 0.0),
-                    "duration": getattr(item, 'duration', 0.0)
-                })
-
-        full_text = " ".join(chunk["text"].replace("\n", " ") for chunk in transcript_list)
-        return transcript_list, full_text
-
-    except TranscriptsDisabled:
-        raise TranscriptsDisabled(video_id)
+        # Try fetching preferred languages first (English, Hindi)
+        fetched = api.fetch(video_id, languages=['en', 'en-US', 'en-GB', 'hi'])
     except NoTranscriptFound:
-        raise NoTranscriptFound(video_id, ['en', 'hi'], None)
+        # Fallback to any transcript language available for this video
+        try:
+            fetched = api.fetch(video_id)
+        except (TranscriptsDisabled, NoTranscriptFound) as e:
+            raise e
+        except Exception as e:
+            raise Exception(f"Could not retrieve transcript: {str(e)}")
+    except TranscriptsDisabled as e:
+        raise e
     except Exception as e:
         raise Exception(f"Could not retrieve transcript: {str(e)}")
+
+    raw_data = fetched.to_raw_data()
+    
+    # Convert into standard dictionary items
+    transcript_list = []
+    for item in raw_data:
+        if isinstance(item, dict):
+            transcript_list.append(item)
+        else:
+            transcript_list.append({
+                "text": getattr(item, 'text', str(item)),
+                "start": getattr(item, 'start', 0.0),
+                "duration": getattr(item, 'duration', 0.0)
+            })
+
+    full_text = " ".join(chunk["text"].replace("\n", " ") for chunk in transcript_list)
+    return transcript_list, full_text
+
 
