@@ -1,10 +1,10 @@
 streamlit
 python-dotenv
-langchain
-langchain-community
-langchain-core
-langchain-huggingface
-langchain-groq
+langchain==0.3.25
+langchain-community==0.3.24
+langchain-core==0.3.60
+langchain-huggingface==0.1.2
+langchain-groq==0.3.2
 youtube-transcript-api
 faiss-cpu
 tiktoken
