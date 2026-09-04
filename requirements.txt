@@ -9,3 +9,4 @@ youtube-transcript-api
 faiss-cpu
 tiktoken
 sentence-transformers
+rank-bm25

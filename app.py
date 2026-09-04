@@ -156,7 +156,10 @@ with st.sidebar:
             if vectorstore_exists(vid):
                 with st.spinner("Found pre-existing index. Loading vector database..."):
                     db = load_vectorstore(st.session_state["embeddings"], vid)
-                    retriever = get_retriever(db)
+                    # Re-fetch transcript chunks needed for BM25 hybrid search
+                    transcript_list, _ = load_transcript(vid)
+                    docs = split_documents(transcript_list, vid)
+                    retriever = get_retriever(db, docs)
                     st.session_state["rag_chain"] = create_rag_chain(retriever)
                 st.success("Loaded database from disk in 0s!")
             else:
@@ -178,7 +181,7 @@ with st.sidebar:
                 progress_bar.progress(80)
                 db = create_vectorstore(docs, st.session_state["embeddings"], vid)
                 
-                retriever = get_retriever(db)
+                retriever = get_retriever(db, docs)
                 st.session_state["rag_chain"] = create_rag_chain(retriever)
                 
                 progress_bar.progress(100)
