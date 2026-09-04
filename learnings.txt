@@ -1,1 +1,1 @@
-always in requirements.txt write version number
+always in requirements.txt write version number better to write in range 
