@@ -16,16 +16,26 @@ def get_llm() -> ChatGroq:
         try:
             import streamlit as st
             api_key = st.secrets.get("GROQ_API_KEY")
+            if api_key:
+                os.environ["GROQ_API_KEY"] = str(api_key)
         except Exception:
             pass
             
     if not api_key:
         raise ValueError("GROQ_API_KEY not found. Please set GROQ_API_KEY in environment variables or Streamlit secrets.")
-    return ChatGroq(
-        model=config.GROQ_MODEL_NAME,
-        temperature=0.2,
-        groq_api_key=api_key
-    )
+    
+    try:
+        return ChatGroq(
+            model=config.GROQ_MODEL_NAME,
+            temperature=0.2,
+            api_key=api_key
+        )
+    except TypeError:
+        return ChatGroq(
+            model=config.GROQ_MODEL_NAME,
+            temperature=0.2,
+            groq_api_key=api_key
+        )
 
 def create_rag_chain(retriever):
     """
