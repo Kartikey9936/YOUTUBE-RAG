@@ -10,3 +10,5 @@ faiss-cpu
 tiktoken
 sentence-transformers
 rank-bm25
+fastapi
+uvicorn

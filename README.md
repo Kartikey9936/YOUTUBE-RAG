@@ -1,17 +1,18 @@
-# 🎥 YouTube RAG Chatbot
+# 🎥 YouTube RAG Chatbot & FastAPI Backend
 
-An interactive RAG (Retrieval-Augmented Generation) application built with **Streamlit**, **LangChain**, **FAISS**, and **Groq LLM**. Chat with any YouTube video transcript and get precise, timestamped answer citations.
+An interactive RAG (Retrieval-Augmented Generation) application and REST API built with **FastAPI**, **Streamlit**, **LangChain**, **FAISS**, and **Groq LLM**. Chat with any YouTube video transcript and get precise, timestamped answer citations.
 
 ---
 
 ## 🚀 Features
 
+- ⚡ **FastAPI Backend** — High-performance RESTful API with CORS, automatic Swagger UI docs (`/docs`), and Pydantic validation
 - 📜 **Automatic Transcript Fetching** — Downloads captions from YouTube with language fallback (English → Hindi → any available)
 - 🧠 **Local Embeddings** — Powered by `sentence-transformers/all-MiniLM-L6-v2` (runs fully offline)
 - ⚡ **Fast Generation** — Backed by Groq LLM (`openai/gpt-oss-20b`)
 - ⏱️ **Timestamp Citations** — Click-to-watch links that jump to the exact moment in the video
-- 🔍 **Hybrid Search** *(v2)* — Combines dense FAISS vector search with sparse BM25 keyword search via `EnsembleRetriever`
-- 🏆 **Cross-Encoder Reranking** *(v2)* — Uses `cross-encoder/ms-marco-MiniLM-L-6-v2` to rerank the top-20 retrieved chunks and return only the best 5
+- 🔍 **Hybrid Search** — Combines dense FAISS vector search with sparse BM25 keyword search via `EnsembleRetriever`
+- 🏆 **Cross-Encoder Reranking** — Uses `cross-encoder/ms-marco-MiniLM-L-6-v2` to rerank retrieved chunks and return the best 5
 
 ---
 
@@ -19,7 +20,8 @@ An interactive RAG (Retrieval-Augmented Generation) application built with **Str
 
 | Layer | Technology |
 |---|---|
-| UI | Streamlit |
+| API Backend | FastAPI + Uvicorn |
+| Web UI | Streamlit |
 | Orchestration | LangChain (LCEL) |
 | Dense Retrieval | FAISS + HuggingFace Embeddings |
 | Sparse Retrieval | BM25 (`langchain-community`) |
@@ -30,33 +32,9 @@ An interactive RAG (Retrieval-Augmented Generation) application built with **Str
 
 ---
 
-## ⚙️ How It Works
+## 🚀 How to Run
 
-```
-YouTube URL
-    │
-    ▼
-1. Extract transcript (youtube-transcript-api)
-    │
-    ▼
-2. Chunk + timestamp-map (RecursiveCharacterTextSplitter)
-    │
-    ▼
-3. Embed + store in FAISS (cached to disk per video ID)
-    │
-    ▼
-4. On query → Hybrid Retrieval (FAISS 70% + BM25 30%) → top-20 candidates
-    │
-    ▼
-5. CrossEncoder reranker → top-5 most relevant chunks
-    │
-    ▼
-6. Groq LLM generates answer with timestamp citations
-```
-
----
-
-## 📦 Installation
+### 1. Installation
 
 ```bash
 git clone <repo-url>
@@ -70,7 +48,14 @@ Create a `.env` file:
 GROQ_API_KEY=your_groq_api_key_here
 ```
 
-Run the app:
+### 2. Running FastAPI Backend Server
+
+```bash
+uvicorn main:app --reload --port 8000
+```
+- **Interactive Swagger API Docs**: Open [http://localhost:8000/docs](http://localhost:8000/docs) in your browser.
+
+### 3. Running Streamlit Web UI
 
 ```bash
 streamlit run app.py
@@ -78,10 +63,23 @@ streamlit run app.py
 
 ---
 
+## 🔌 FastAPI Endpoint Documentation
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/` | Health check endpoint |
+| `POST` | `/api/process` | Process a YouTube URL or video ID and initialize vector index |
+| `POST` | `/api/chat` | Query the RAG chain for a video and receive timestamp citations |
+| `GET` | `/api/video/{video_id}/status` | Check if vectorstore index exists on disk or in memory |
+| `GET` | `/api/video/{video_id}/metadata` | Fetch YouTube video title, creator name, and thumbnail |
+
+---
+
 ## 📁 Project Structure
 
 ```
 YOUTUBE-RAG/
+├── main.py                 # FastAPI backend server
 ├── app.py                  # Streamlit UI + pipeline orchestration
 ├── src/
 │   ├── config.py           # Paths, model names, chunk settings
@@ -96,23 +94,6 @@ YOUTUBE-RAG/
 ├── requirements.txt
 └── .env
 ```
-
----
-
-## 🔄 Changelog
-
-### v2 — Hybrid Search & Reranking
-- **Added**: `EnsembleRetriever` combining FAISS (dense) + BM25 (sparse) retrieval
-- **Added**: `CrossEncoder` reranker (`ms-marco-MiniLM-L-6-v2`) over top-20 candidates → returns top-5
-- **Fixed**: `get_retriever()` now returns a LangChain-compatible `RunnableLambda` so the reranker is fully wired into the LCEL chain
-- **Fixed**: `CrossEncoder` now loads lazily inside `get_retriever()` instead of at module import time
-- **Fixed**: Both `get_retriever()` call sites in `app.py` updated to pass `chunks` (required by BM25)
-- **Fixed**: Pre-existing index path now re-fetches transcript chunks for BM25 (FAISS is disk-cached; BM25 is in-memory only)
-
-### v1 — Initial Release
-- Basic RAG pipeline with FAISS vector search
-- Streamlit chat UI with timestamp citation cards
-- Groq LLM integration
 
 ---
 
