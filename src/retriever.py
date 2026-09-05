@@ -6,10 +6,7 @@ except ImportError:
 try:
     from langchain.retrievers import EnsembleRetriever
 except ImportError:
-    try:
-        from langchain_community.retrievers import EnsembleRetriever
-    except ImportError:
-        from langchain_community.retrievers.ensemble import EnsembleRetriever
+    from langchain.retrievers.ensemble import EnsembleRetriever
 from langchain_core.runnables import RunnableLambda
 from sentence_transformers import CrossEncoder
 
