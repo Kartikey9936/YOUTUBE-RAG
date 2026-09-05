@@ -1,5 +1,15 @@
-from langchain_community.retrievers import BM25Retriever
-from langchain.retrievers import EnsembleRetriever
+try:
+    from langchain_community.retrievers import BM25Retriever
+except ImportError:
+    from langchain.retrievers import BM25Retriever
+
+try:
+    from langchain.retrievers import EnsembleRetriever
+except ImportError:
+    try:
+        from langchain_community.retrievers import EnsembleRetriever
+    except ImportError:
+        from langchain_community.retrievers.ensemble import EnsembleRetriever
 from langchain_core.runnables import RunnableLambda
 from sentence_transformers import CrossEncoder
 
