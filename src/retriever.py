@@ -1,12 +1,19 @@
 try:
     from langchain_community.retrievers import BM25Retriever
-except ImportError:
-    from langchain.retrievers import BM25Retriever
+except (ImportError, ModuleNotFoundError):
+    try:
+        from langchain.retrievers import BM25Retriever
+    except (ImportError, ModuleNotFoundError):
+        BM25Retriever = None
 
 try:
     from langchain.retrievers import EnsembleRetriever
-except ImportError:
-    from langchain.retrievers.ensemble import EnsembleRetriever
+except (ImportError, ModuleNotFoundError):
+    try:
+        from langchain.retrievers.ensemble import EnsembleRetriever
+    except (ImportError, ModuleNotFoundError):
+        EnsembleRetriever = None
+
 from langchain_core.runnables import RunnableLambda
 from sentence_transformers import CrossEncoder
 
@@ -25,15 +32,18 @@ def get_retriever(vectorstore, chunks):
         search_kwargs={"k": 10}
     )
 
-    # Sparse retriever (keyword-based BM25)
-    bm25_retriever = BM25Retriever.from_documents(chunks)
-    bm25_retriever.k = 10
+    # Hybrid search if both EnsembleRetriever and BM25Retriever are available
+    if EnsembleRetriever is not None and BM25Retriever is not None:
+        bm25_retriever = BM25Retriever.from_documents(chunks)
+        bm25_retriever.k = 10
 
-    # Hybrid: Reciprocal Rank Fusion of both retrievers
-    hybrid_retriever = EnsembleRetriever(
-        retrievers=[vector_retriever, bm25_retriever],
-        weights=[0.7, 0.3]
-    )
+        hybrid_retriever = EnsembleRetriever(
+            retrievers=[vector_retriever, bm25_retriever],
+            weights=[0.7, 0.3]
+        )
+    else:
+        # Fallback to dense vector retriever if Ensemble/BM25 module is missing
+        hybrid_retriever = vector_retriever
 
     # Lazy-load CrossEncoder once per call to get_retriever
     reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
